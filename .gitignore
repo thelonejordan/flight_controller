@@ -1,0 +1,14 @@
+/ITSP/
+*.bin
+*.eep
+*.elf
+*.hex
+*.lss
+*.map
+*.srec
+.vs/
+Debug/
+Device_Startup/
+*.atsln
+*.cppproj
+*.componentinfo.xml
