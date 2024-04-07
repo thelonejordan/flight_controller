@@ -1,4 +1,4 @@
-# Quadcopter Flight Controller from scratch
+# Quadcopter Flight Controller based on Kalman Filter
 
 I built a Quadcopter Flight Controller from scratch as a summers project (circa 2017).
 

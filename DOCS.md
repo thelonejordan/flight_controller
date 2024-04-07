@@ -107,7 +107,7 @@ But my code still runs without any problem. Maybe the Write Protect Mode was alr
 PMC->PMC_WPMR &= ~(PMC_WPMR_WPEN);            //Disable the Write Protect Mode
 ```
 
-### CREATE TIMER FUNCTIONS TO CREATE DELAYS OF SPECIFIC INTERVALS
+## CREATE TIMER FUNCTIONS TO CREATE DELAYS OF SPECIFIC INTERVALS
 
 In my project, I need a precision of at most 1 us. So I need a clock frequency of at least 1 MHz. There are two sections in the datasheet through which we can create such timers. One is Section 13 `RTT` (Real Time Timer) and the other is Section 36 `TC` (Timer Counter). 
 
@@ -324,3 +324,88 @@ void PIOD_Handler(void){
 ```
 
 ## ACTIVATE ANALOG PINS AND USE THEM AS INPUT
+
+## I2C REGISTER SETTINGS
+
+this part describes the register settings of MPU 6050 and HMC5883L
+
+```
+MPU 6050
+
+Reset value of all registers: 0x00 (13 to 117)
+Exceptions: Register 107 : 0x40
+            Register 117 : 0x68
+
+The device will come up in sleep mode upon power-up.
+
+Register 1A CONFIG | Write 0x03 | Set DLPF to 43Hz for acc and gyro
+
+Register 1B GYRO_CONFIG | Write 0x08 | Set gyro FS to +-500 dps LSB 65.5/dps | Write 0xE8 to also enable self test
+
+Register 1C ACCEL_CONFIG | Write 0x10 | Set accel FS to +-8g LSB 4096/g| Write 0xF0 to also enable self test
+
+
+Register 3B 59 | ACCEL_XOUT[15:8] 
+Register 3C 60 | ACCEL_XOUT[7:0] 
+Register 3D 61 | ACCEL_YOUT[15:8] 
+Register 3E 62 | ACCEL_YOUT[7:0] 
+Register 3F 63 | ACCEL_ZOUT[15:8] 
+Register 40 64 | ACCEL_ZOUT[7:0]
+Register 41 65 | TEMP_OUT[15:8]        Temperature in degrees C = (TEMP_OUT Register Value as a signed quantity)/340 + 36.53
+Register 42 66 | TEMP_OUT[7:0]         The scale factor and offset for the temperature sensor are found in the Electrical Specifications table (Section 6.4 of the MPU-6000/MPU-6050 Product Specification document).
+Register 43 67 | GYRO_XOUT[15:8] 
+Register 44 68 | GYRO_XOUT[7:0]
+Register 45 69 | GYRO_XOUT[15:8] 
+Register 46 70 | GYRO_XOUT[7:0]
+Register 47 71 | GYRO_XOUT[15:8] 
+Register 48 72 | GYRO_XOUT[7:0]
+
+Register 0x68 SIGNAL_PATH_RESET | Write 0x03 to reset
+
+Register 0x6A USER_CONTROL | Write 0x01 to reset
+
+Register 0x6B PWR_MGMT_1 | Write 0x80 to device_reset
+
+Register 0x6B PWR_MGMT_1 | Write 0x00 to disable sleep mode
+```
+
+```
+HMC5883L
+
+Device i2c address: 0x1E
+
+Read/Write Identifier :  Read  ----  0x3D
+                         Write ----  0x3C
+
+Register 0x00 CRA (Configuration Register A) 
+	Default: 0x10
+	Write: 0x59 B01011001
+	No. of samples averaged per measurement: 4
+	Typical Data Output Rate (Hz): 75
+	Incorporated Positive applied bias into measurement
+
+NOTE:  Magnitude of Magnetic Field at the Earth's surface ranges from 25 to 65 microteslas (0.25 to 0.65 gauss).
+
+Register 0x01 CRB (Configuration Register B)
+	Default: 0x20
+	Sensor Field Range: +-1.3 Ga
+	Gain: 1090 LSB/Ga
+
+Register 0x02 Mode Register
+	Default: 0x01
+	Write: B10000000 0x80
+	Continuous-Measurement Mode enabled
+    High Speed i2c enabled
+
+03  Data Output X MSB Register
+04  Data Output X LSB Register
+05  Data Output Z MSB Register
+06  Data Output Z LSB Register
+07  Data Output Y MSB Register
+08  Data Output Y LSB Register
+
+
+10  Identification Register A |  'H'
+11  Identification Register B |  '4'
+12  Identification Register C |  '3'
+```
