@@ -327,7 +327,7 @@ void PIOD_Handler(void){
 
 ## I2C REGISTER SETTINGS
 
-register settings of MPU 6050:
+### register settings of MPU 6050:
 
 ```
 Reset value of all registers: 0x00 (13 to 117)
@@ -367,7 +367,7 @@ Register 0x6B PWR_MGMT_1 | Write 0x80 to device_reset
 Register 0x6B PWR_MGMT_1 | Write 0x00 to disable sleep mode
 ```
 
-register settings of HMC5883L
+### register settings of HMC5883L
 
 ```
 Device i2c address: 0x1E
@@ -406,4 +406,161 @@ Register 0x02 Mode Register
 10  Identification Register A |  'H'
 11  Identification Register B |  '4'
 12  Identification Register C |  '3'
+```
+
+## Euler Transformation
+
+```cpp
+//roll  phi
+//pitch theta
+//yaw   psi
+
+roll.rate = w(x) + sin(roll.angle)tan(pitch.angle)w(y) + cos(roll.angle)tan(pitch.angle)w(z);
+pitch.rate = cos(pitch.angle)w(y) - sin(roll.angle)w(z);
+yaw.rate = sin(roll.angle)sec(pitch.angle)w(y) + cos(roll.angle)sec(pitch.angle)w(z);
+
+//THIS PART DESCRIBES THE CONVERSION OF ANGULAR VELOCITY DATA FROM GYROSCOPE(MPU 6050) TO RATE OF CHANGE OF EULER ANGLES.
+```
+
+## Connections
+
+THIS PART DESCRIBES THE ELECTRICAL COMMUNICATIONS IN THIS PROJECT
+
+```
+All CONNECTIONS
+
+==========================================================================================
+
+Receiver to arduino DUE connections
+
+Reciever channel 1 --> 33   --> roll
+Reciever channel 2 --> 35   --> pitch
+Reciever channel 3 --> 37  --> throttle
+Reciever channel 4 --> 39  --> yaw
+
+==========================================================================================
+
+ESC to arduino connections 
+
+ESC 1 --> Right front --> CCW --> 50
+ESC 2 --> Right rear  --> CW  --> 48
+ESC 3 --> Left  rear  --> CCW --> 46
+ESC 4 --> Left  front --> CW  --> 44
+
+==========================================================================================
+
+LED is connected to D13 via 200ohm resistor
+
+==========================================================================================
+
+ALL I2C DEVICES CONNECTIONS - MPU6050 + HMC5883L
+(SENSOR -- ARDUINO DUE)
+VCC -- 5V
+GND -- GND
+SDA -- SDA
+SCL -- SCL
+
+==========================================================================================
+
+Analog input from battery via voltage divider(potentiometer) is connected to A0.
+
+==========================================================================================
+```
+
+## Routines
+
+### Setup
+
+```
+START I2C AT 400kHz
+             |
+             v
+SET PINS 4 TO 7 AS OUTPUT
+             |
+             v
+SET PINS 12 & 13 AS OUTPUT
+             |
+             v
+TURN ON THE LED AT PIN 12
+             |
+             v
+SET UP THE INTERNAL REGISTERS OF MPU6050 (Call the setup_mpu_registers() function)
+             |
+             v
+FEED 1000us PULSE TO THE ESC FOR 5 SECS
+             |
+             v
+CALIBRATE THE GYROSCOPE ALONG WITH FEEDING THE ESC WITH 1000us PULSE
+             |
+             v
+SETUP THE INTERUPPT SUBROUTINE TO READ RECEIVER SIGNALS
+             |
+             v
+WAIT UNTIL RECEIVER IS ACTIVE AND THROTTLE IS SET TO LOWEST POSITION
+             |
+             v
+INITIALIZE BATTERY VOLTAGE AND TIMER COUNTER VARIABLE
+             |
+             v
+WHEN EVERYTHING IS DONE, TURN OFF LED
+```
+
+### Main Loop
+
+```
+GYROSCOPE LOW PASS FILTER
+             |
+             v
+GYROSCOPE ANGLE CALCULATIONS
+             |
+             v
+EULER ANGLES YAW CORRECTIONS
+             |
+             v
+ACCELEROMETER ANGLE CALCULATIONS
+             |
+             v
+SENSOR FUSION BY KALMAN FILTER
+             |
+             v
+THROTTLE LOW YAW LEFT TO START (SET START FLAG TO 1)
+             |
+             v
+STOP MOTORS WHEN THROTTLE IS LOW YAW STICK IS BACK AT CENTER(SET START FLAG T0 0)
+             |
+             v
+CALCULATE PID ROLL, PITCH AND YAW SETPOINTS
+             |
+             v
+PID INPUTS ARE KNOWN, SO CALCULATE PID OUTPUT
+             |
+             v
+CHECK BATTERY VOLTAGE, IF TOO LOW , TURN ON THE LED
+             |
+             v
+CALCULATE PULSE FOR EACH ESC
+             |
+             v
+COMPENSATE ESC PULSES FOR VOLTAGE DROP
+             |
+             v
+LIMIT ESC OUTPUT AND KEEP MOTORS RUNNING(1100 TO 2000)
+             |
+             v
+IF LOOP EXCEEDS 4000 US, TURN ON LED                                                             //STARTING POINT AND END POINT OF A SINGLE LOOP
+             |
+             v
+WAIT UNTIL 4000 US ARE PASSED
+             |
+             v
+START ESC PULSE BY SETTING PORTS HIGH
+             |
+             v
+GYRO AND RECEIVER DATA COLLECTION AND CALCULATION             |
+             |
+             v
+END THE ESC PULSES BY SETTING PORTS LOW
+             |
+             v
+GO BACK TO THE TOP OF THE LOOP
 ```
