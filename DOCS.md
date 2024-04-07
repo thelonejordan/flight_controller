@@ -327,11 +327,9 @@ void PIOD_Handler(void){
 
 ## I2C REGISTER SETTINGS
 
-this part describes the register settings of MPU 6050 and HMC5883L
+register settings of MPU 6050:
 
 ```
-MPU 6050
-
 Reset value of all registers: 0x00 (13 to 117)
 Exceptions: Register 107 : 0x40
             Register 117 : 0x68
@@ -369,9 +367,9 @@ Register 0x6B PWR_MGMT_1 | Write 0x80 to device_reset
 Register 0x6B PWR_MGMT_1 | Write 0x00 to disable sleep mode
 ```
 
-```
-HMC5883L
+register settings of HMC5883L
 
+```
 Device i2c address: 0x1E
 
 Read/Write Identifier :  Read  ----  0x3D
