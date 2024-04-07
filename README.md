@@ -17,7 +17,7 @@ On searching online, I found that many people have been complaining about proble
 
 Rather than looking up at the internal header files of Arduino, that may be causing the problem, I decided to switch to Atmel studio so that I can understand the register settings and port manipulation better. Also the header files of Arduino IDE contain many lines of codes that are irrelevant for the user and can sometimes cause head-scratching problems like the one above.
 
-Arduino Due runs on `atsam3x8e` or simply `sam3x8e`, an ARM microprocessor. Unlike AVR processors such as atmega328p (on Adruino Uno), ARM Processors run at 3.3V logic level, are faster and more complex. I downloaded the `sam3x8e` datasheet from here and an unofficial Arduino Due pin out diagram from here. The official Arduino Due schematic is available here.  For my project, the things I needed to run on due was to:
+Arduino Due runs on `atsam3x8e` or simply `sam3x8e`, an ARM microprocessor. Unlike AVR processors such as atmega328p (on Adruino Uno), ARM Processors run at 3.3V logic level, are faster and more complex. I downloaded the `sam3x8e` datasheet from [here](http://www.atmel.com/Images/Atmel-11057-32-bit-Cortex-M3-Microcontroller-SAM3X-SAM3A_Datasheet.pdf) and an unofficial Arduino Due pin out diagram from [here](http://www.robgray.com/temp/Due-pinout.pdf). The official Arduino Due schematic is available [here](https://www.arduino.cc/en/uploads/Main/arduino-Due-schematic.pdf).  For my project, the things I needed to run on due was to:
 
 - Find a way to `UPLOAD` programs from Atmel studio to `sam3x8e` without using any external programmer
 - Make `sam3x8e` run at `FULL CLOCK SPEED` i.e. 84MHz
@@ -27,7 +27,6 @@ Arduino Due runs on `atsam3x8e` or simply `sam3x8e`, an ARM microprocessor. Unli
 - Activate `UART` Function to communicate with the `PC` (Serial Monitor of Arduino IDE)
 - Activate and enable `INTERRUPT` service to generate interrupt whenever state of pins toggle
 - Activate `ANALOG` Pins and use them as `INPUT`
-
 
 And the following points are why I need them in my project. Some of them are obvious, so I marked them obvious. 
 - `UPLOAD`: Obvious.
@@ -39,13 +38,12 @@ And the following points are why I need them in my project. Some of them are obv
 - `INTERRUPT`: To read receiver signals while flying.
 - `ANALOG`: To determine battery voltage while flying.
 
-
 ## FIND A WAY TO UPLOAD PROGAMS FROM ATMEL STUDIO WITHOUT EXTERNAL PROGRAMMER
 
 Arduino Due has two ports: The Programming Port (`ATMEGA16U2`) and the Native USB Port (`SAM3X`).
 At first, I tried to copy the way Arduino IDE uploads the program to `atsam3xe` via Programming Port (`Atmega16U2`). I checked the “Show Verbose Output during Upload” of the Arduino IDE and copied the “Commands and Arguments” to create a new external tool in the Atmel Studio. Although it worked for Arduino Uno and Leonardo (AVR Processor based boards), it didn’t work for Arduino Due. I am not mentioning the exact way I did it, as it didn’t work anyway. What I learnt was: just like `avrdude.exe` is required to program AVR Processors, `bossac.exe` is required to program ARM Processors.
 
-As I couldn’t figure out how to upload code via Programming Port, I switched to Native USB Port. I found this website which neatly describes how to upload via Native USB Port. I followed the steps and it worked just fine.
+As I couldn’t figure out how to upload code via Programming Port, I switched to Native USB Port. I found this [website](http://www.elecrom.com/program-arduino-due-atmel-studio/) which neatly describes how to upload via Native USB Port. I followed the steps and it worked just fine.
 
 
 ## MAKE SAM3X8E RUN AT 84MHz
@@ -55,14 +53,14 @@ On creating a new project on Atmel Studio and selecting device as `sam3x8e`, in 
 
 ## DECLARE PINS AS OUTPUT AND RUN REQUIRED LOGIC LEVEL
 
-Going through the datasheet, under section 31. Parallel Input/Output Controller, I found all the register settings needed to declare a pin as output. To declare pin 13(which is connected to on-board                                                                               LED) of Arduino Due which is pin B27 of sam3x8e (see the pin out), the code is:
+Going through the [datasheet](http://www.atmel.com/Images/Atmel-11057-32-bit-Cortex-M3-Microcontroller-SAM3X-SAM3A_Datasheet.pdf), under section 31. Parallel Input/Output Controller, I found all the register settings needed to declare a pin as output. To declare pin 13(which is connected to on-board LED) of Arduino Due which is pin B27 of sam3x8e (see the [pin out](http://www.robgray.com/temp/Due-pinout.pdf)), the code is:
 
 ```cpp   
 PIOB->PIO_PER |= PIO_PER_P27;              //PIO Enable Register (not required though)
 PIOB->PIO_OER |= PIO_OER_P27 ;             //Output Enable Register  
 ```
 
-The first line is not required as PIO Controller is enabled by default after reset. But if the pin is configured to work as a peripheral (specially assigned functions), the PIO Controller needs to be enabled first.
+The first line is not required as PIO Controller is enabled by default after reset. But if the pin is configured to work as a peripheral (specially assigned functions), the `PIO` Controller needs to be enabled first.
 
 To drive it high:
 
@@ -78,7 +76,7 @@ PIOB->PIO_CODR |= PIO_CODR_P27;            //Clear Output Data Register
 
 ## DECLARE PINS AS INPUT AND READ THEIR LOGIC LEVEL
 
-Going further in the same section as above, I found the register settings for declaring pins as input. To declare pin 12 of Arduino Due which is pin D8 of sam3x8e (see the pin out), the code is:
+Going further in the same section as above, I found the register settings for declaring pins as input. To declare pin 12 of Arduino Due which is pin D8 of sam3x8e (see the [pin out](http://www.robgray.com/temp/Due-pinout.pdf)), the code is:
 
 ```cpp
 PIOD->PIO_PER |= PIO_PER_P8;               //PIO Enable Register (not required though)
@@ -91,11 +89,11 @@ The status of the pin (`HIGH` or `LOW`) can be read from the `PDSR` (Pin Data St
 uint16_t state = (PIOD->PIO_PDSR & PIO_PDSR_P8)>>8;  //Read the PIO_PDSR register
 ```
 
-But the code didn’t work at all. I rechecked the datasheet and found that unlike just declaring pins as input/output, there was an additional instruction that said: 
+But the code didn’t work at all. I rechecked the [datasheet](http://www.atmel.com/Images/Atmel-11057-32-bit-Cortex-M3-Microcontroller-SAM3X-SAM3A_Datasheet.pdf) and found that unlike just declaring pins as input/output, there was an additional instruction that said: 
 
 ***"Reading the I/O line levels requires the clock of the `PIO` controller to be enabled, otherwise `PIO_PDSR` reads the levels present on the I/O line at the time the clock was disabled."***
 
-I searched the datasheet, but didn’t find a clue how to enable the clock. So I advanced further, and while writing the code for UART initialization, I stumbled upon this forum, where someone mentioned about enabling the peripheral clock for UART. So I referred to the Peripheral Identifier section of the datasheet and found a list of `PID`s (Peripheral Identifiers) and their corresponding peripheral. I found the peripheral `PIOD` with `PID` 14. Then I included the line of code (mentioned below) in my ‘declaring pins as input ‘ program, and pin 12 is successfully declared as input and everything works fine. `PCER0` stands for Peripheral Clock Enable Register 0.
+I searched the datasheet, but didn’t find a clue how to enable the clock. So I advanced further, and while writing the code for UART initialization, I stumbled upon this [forum](http://forum.arduino.cc/index.php?topic=179431.msg1342932#msg1342932), where someone mentioned about enabling the peripheral clock for UART. So I referred to the Peripheral Identifier section of the datasheet and found a list of `PID`s (Peripheral Identifiers) and their corresponding peripheral. I found the peripheral `PIOD` with `PID` 14. Then I included the line of code (mentioned below) in my ‘declaring pins as input ‘ program, and pin 12 is successfully declared as input and everything works fine. `PCER0` stands for Peripheral Clock Enable Register 0.
 
 ```cpp
 PMC->PMC_PCER0 |= PMC_PCER0_PID14;             //Enable PIOD Clock
@@ -117,7 +115,7 @@ The `RTT` runs through the `SWCLK` (`SLOW CLOCK`) that has a clock frequency of 
 
 The `TC` can be made to run from 5 internal clock sources, that are `MCK/2`, `MCK/8`, `MCK/32`, `MCK/128` and `SWCLK` (`MCK` refers to `MAIN CLOCK`). As sam3x8e is running at 84 MHz (MCK), the usable frequencies are `MCK/2`, `MCK/8` and `MCK/32`. I chose to use `MCK/8` or 10.5 MHz for my clock frequency. 
 
-I found this blog which may be useful. The following is the code used for setting up the timer.
+I found this [blog](http://ko7m.blogspot.nl/2015/01/arduino-due-timers-part-1.html) which may be useful. The following is the code used for setting up the timer.
 
 ```cpp
 //Configure PMC
@@ -149,7 +147,7 @@ uint32_t counter = TC0->TC_CHANNEL[0].TC_CV;
 
 ## ACTIVATE TWI INTERFACE TO COMMUNICATE WITH I2C SENSORS
 
-This part is described in the datasheet under Section 33 Two-Wire Interface (`TWI`).There are two `TWI` channels. I’m using the second channel (`TWI1`) which are pins `SDA` and `SCL` of Arduino Due and  pins `B12` and `B13` of `sam3x8e` (see the pin out). 
+This part is described in the datasheet under Section 33 Two-Wire Interface (`TWI`).There are two `TWI` channels. I’m using the second channel (`TWI1`) which are pins `SDA` and `SCL` of Arduino Due and  pins `B12` and `B13` of `sam3x8e` (see the [pin out](http://www.robgray.com/temp/Due-pinout.pdf)). 
 
 First of all, I programmed the `PIO` controller to dedicate `TWD` and `TWCK` as peripheral lines. Then, enabled the peripheral clock. And set the mode of operation to Master Mode. The steps of using `TWI` in different modes are neatly displayed in a flowchart at the end of the `TWI` section.
 
@@ -267,7 +265,7 @@ while(!(TWI1->TWI_SR & TWI_SR_TXCOMP));
 
 ## ACTIVATE UART FUNCTION TO COMMUNICATE WITH THE PC
 
-This part is described in the datasheet under Section 34 Universal Asynchronous Receiver Transceiver (`UART`). Pin RX0 and TX0 of Arduino Due (pins `PA8` and `PA9` of `sam3x8e`) are the `UART` pins. The following code initializes the UART communication at 57600 bps. I also posted the code in this forum.
+This part is described in the datasheet under Section 34 Universal Asynchronous Receiver Transceiver (`UART`). Pin RX0 and TX0 of Arduino Due (pins `PA8` and `PA9` of `sam3x8e`) are the `UART` pins. The following code initializes the UART communication at 57600 bps. I also posted the code in this [forum](http://forum.arduino.cc/index.php?topic=179431.msg1342932#msg1342932).
 
 ```cpp
 //Enable UART Peripheral Clock
