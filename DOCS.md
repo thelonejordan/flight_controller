@@ -303,5 +303,24 @@ while(!(UART->UART_SR & UART_SR_TXRDY));      //Wait till data is sent and THR i
 
 ## ACTIVATE INTERRUPT SERVICE TO ACT WHENEVER PIN STATE TOGGLES
 
+Using interrupts on `GPIO` pins is quite straight forward. It is described in Section 10 ARM Cortex M3 Processor under subsection: Nested Vectored Interrupt Controller (`NVIC`). First `NVIC` needs to be set up to enable Handler functions. The code to be run in the interrupt is written under the Handler functions. Here is a link that I referred. Below is the code to enable Edge Detection Interrupt on pin 12 of Arduino Due. That is pin D8 of `sam3x8e` (see the pin out). 
+
+```cpp
+//Enable Interrupts
+PIOD->PIO_IER |= PIO_IER_P8;
+
+//Configure NVIC
+NVIC_EnableIRQ(PIOD_IRQn);
+
+//Interrupt Sub Routine
+void PIOD_Handler(void){
+
+	//code inside interrupt goes here
+	
+//read interrupt status register
+	PIOD->PIO_ISR;
+
+}
+```
 
 ## ACTIVATE ANALOG PINS AND USE THEM AS INPUT
