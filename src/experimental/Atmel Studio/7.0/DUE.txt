@@ -1,0 +1,8 @@
+UART Communication   -------  Done
+Timer Counters       -------  Done
+INPUT                -------  Done
+OUTPUT               -------  Done
+ADC Peripheral       -------  Done
+TWI                  -------  Done
+Interrupts           -------  Done
+
