@@ -17,7 +17,7 @@ On searching online, I found that many people have been complaining about proble
 
 Rather than looking up at the internal header files of Arduino, that may be causing the problem, I decided to switch to Atmel studio so that I can understand the register settings and port manipulation better. Also the header files of Arduino IDE contain many lines of codes that are irrelevant for the user and can sometimes cause head-scratching problems like the one above.
 
-Arduino Due runs on `atsam3x8e` or simply `sam3x8e`, an ARM microprocessor. Unlike AVR processors such as atmega328p (on Adruino Uno), ARM Processors run at 3.3V logic level, are faster and more complex. I downloaded the `sam3x8e` datasheet from [here](http://www.atmel.com/Images/Atmel-11057-32-bit-Cortex-M3-Microcontroller-SAM3X-SAM3A_Datasheet.pdf) and an unofficial Arduino Due pin out diagram from [here](http://www.robgray.com/temp/Due-pinout.pdf). The official Arduino Due schematic is available [here](https://www.arduino.cc/en/uploads/Main/arduino-Due-schematic.pdf).  For my project, the things I needed to run on due was to:
+Arduino Due runs on `atsam3x8e` or simply `sam3x8e`, an ARM microprocessor. Unlike AVR processors such as atmega328p (on Adruino Uno), ARM Processors run at 3.3V logic level, are faster and more complex. I downloaded the `sam3x8e` datasheet from [here](http://www.atmel.com/Images/Atmel-11057-32-bit-Cortex-M3-Microcontroller-SAM3X-SAM3A_Datasheet.pdf) and an unofficial Arduino Due pin out diagram from [here](http://www.robgray.com/temp/Due-pinout.pdf). The official Arduino Due schematic is available [here](https://www.arduino.cc/en/uploads/Main/arduino-Due-schematic.pdf). For my project, the things I needed to run on Due were to:
 
 - Find a way to `UPLOAD` programs from Atmel studio to `sam3x8e` without using any external programmer
 - Make `sam3x8e` run at `FULL CLOCK SPEED` i.e. 84MHz
@@ -93,7 +93,7 @@ But the code didn’t work at all. I rechecked the [datasheet](http://www.atmel.
 
 ***"Reading the I/O line levels requires the clock of the `PIO` controller to be enabled, otherwise `PIO_PDSR` reads the levels present on the I/O line at the time the clock was disabled."***
 
-I searched the datasheet, but didn’t find a clue how to enable the clock. So I advanced further, and while writing the code for UART initialization, I stumbled upon this [forum](http://forum.arduino.cc/index.php?topic=179431.msg1342932#msg1342932), where someone mentioned about enabling the peripheral clock for UART. So I referred to the Peripheral Identifier section of the datasheet and found a list of `PID`s (Peripheral Identifiers) and their corresponding peripheral. I found the peripheral `PIOD` with `PID` 14. Then I included the line of code (mentioned below) in my ‘declaring pins as input ‘ program, and pin 12 is successfully declared as input and everything works fine. `PCER0` stands for Peripheral Clock Enable Register 0.
+I searched the datasheet, but didn’t find a clue how to enable the clock. So I advanced further, and while writing the code for UART initialization, I stumbled upon this [forum](http://forum.arduino.cc/index.php?topic=179431.msg1342932#msg1342932), where someone mentioned about enabling the peripheral clock for UART. So I referred to the Peripheral Identifier section of the datasheet and found a list of `PID`s (Peripheral Identifiers) and their corresponding peripheral. I found the peripheral `PIOD` with `PID` 14. Then I included the line of code (mentioned below) in my "declaring pins as input" program, and pin 12 is successfully declared as input and everything works fine. `PCER0` stands for Peripheral Clock Enable Register 0.
 
 ```cpp
 PMC->PMC_PCER0 |= PMC_PCER0_PID14;             //Enable PIOD Clock
@@ -218,13 +218,13 @@ TWI1->TWI_CR |= TWI_CR_START;
 int numofbytes = 14;
 
 
-for(int i = 0; i<numofbytes-1; i++){
+for (int i = 0; i<numofbytes-1; i++){
 
-	//Read Status register, wait until RXRDY is 1
-	while(!(TWI1->TWI_SR & TWI_SR_RXRDY));
+    //Read Status register, wait until RXRDY is 1
+    while(!(TWI1->TWI_SR & TWI_SR_RXRDY));
 
-	//Read Receive Holding register
-	data = TWI1->TWI_RHR;
+    //Read Receive Holding register
+    data = TWI1->TWI_RHR;
 }
 
 //STOP
@@ -303,7 +303,7 @@ while(!(UART->UART_SR & UART_SR_TXRDY));      //Wait till data is sent and THR i
 
 ## ACTIVATE INTERRUPT SERVICE TO ACT WHENEVER PIN STATE TOGGLES
 
-Using interrupts on `GPIO` pins is quite straight forward. It is described in Section 10 ARM Cortex M3 Processor under subsection: Nested Vectored Interrupt Controller (`NVIC`). First `NVIC` needs to be set up to enable Handler functions. The code to be run in the interrupt is written under the Handler functions. Here is a link that I referred. Below is the code to enable Edge Detection Interrupt on pin 12 of Arduino Due. That is pin D8 of `sam3x8e` (see the pin out). 
+Using interrupts on `GPIO` pins is quite straight forward. It is described in Section 10 ARM Cortex M3 Processor under subsection: Nested Vectored Interrupt Controller (`NVIC`). First `NVIC` needs to be set up to enable Handler functions. The code to be run in the interrupt is written under the Handler functions. Here is a [link](http://asf.atmel.com/docs/latest/sam.drivers.usart.usart_synchronous_example.sam3u_ek/html/sam_pio_quickstart_use_case_2.html) that I referred. Below is the code to enable Edge Detection Interrupt on pin 12 of Arduino Due. That is pin D8 of `sam3x8e` (see the pin out).
 
 ```cpp
 //Enable Interrupts
@@ -316,8 +316,8 @@ NVIC_EnableIRQ(PIOD_IRQn);
 void PIOD_Handler(void){
 
 	//code inside interrupt goes here
-	
-//read interrupt status register
+
+    //read interrupt status register
 	PIOD->PIO_ISR;
 
 }
@@ -411,6 +411,8 @@ Register 0x02 Mode Register
 ## Euler Transformation
 
 ```cpp
+//THIS PART DESCRIBES THE CONVERSION OF ANGULAR VELOCITY DATA FROM GYROSCOPE(MPU 6050) TO RATE OF CHANGE OF EULER ANGLES.
+
 //roll  phi
 //pitch theta
 //yaw   psi
@@ -418,8 +420,6 @@ Register 0x02 Mode Register
 roll.rate = w(x) + sin(roll.angle)tan(pitch.angle)w(y) + cos(roll.angle)tan(pitch.angle)w(z);
 pitch.rate = cos(pitch.angle)w(y) - sin(roll.angle)w(z);
 yaw.rate = sin(roll.angle)sec(pitch.angle)w(y) + cos(roll.angle)sec(pitch.angle)w(z);
-
-//THIS PART DESCRIBES THE CONVERSION OF ANGULAR VELOCITY DATA FROM GYROSCOPE(MPU 6050) TO RATE OF CHANGE OF EULER ANGLES.
 ```
 
 ## Connections
